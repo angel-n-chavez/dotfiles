@@ -1,0 +1,8 @@
+[user]
+	name = angel-n-chavez
+	email = achavez.devops@gmail.com
+[init]
+	defaultBranch = main
+
+[core]
+	editor = vim
