@@ -1,3 +1,13 @@
+# DevPod Start dev-container-demo.devpod
+Host dev-container-demo.devpod
+  ForwardAgent yes
+  LogLevel error
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null
+  HostKeyAlgorithms rsa-sha2-256,rsa-sha2-512,ssh-rsa
+  ProxyCommand "/usr/local/bin/devpod" ssh --stdio --context default --user vscode dev-container-demo
+  User vscode
+# DevPod End dev-container-demo.devpod
 Host dockervm
 	HostName dockervm
 	User sre
