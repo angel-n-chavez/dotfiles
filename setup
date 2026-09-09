@@ -1,13 +1,9 @@
 #!/bin/bash
 
-# description: links dotfiles to home dir
+set -euo pipefail
 
-mkdir -p ~/.config
+if ! command -v chezmoi >/dev/null; then
+    sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply git@github.com:angel-n-chavez/dotfiles.git
+fi
 
-ln -sf ~/dotfiles/gitconfig ~/.gitconfig
-ln -sf ~/dotfiles/bashrc ~/.bashrc
-ln -sf ~/dotfiles/vimrc ~/.vimrc
-ln -sf ~/dotfiles/starship.toml ~/.config/starship.toml
-ln -sf ~/dotfiles/ssh/config ~/.ssh/config
-
-echo "Dotfiles Linked!"
+exit 0
