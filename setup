@@ -6,4 +6,46 @@ if ! command -v chezmoi >/dev/null; then
     sh -c "$(curl -fsLS get.chezmoi.io)" -- init --apply git@github.com:angel-n-chavez/dotfiles.git
 fi
 
+echo "=========================================="
+echo "   Bootstrapping Editor Environments      "
+echo "=========================================="
+
+# 1. Classic Vim Configuration & Plugins
+echo "Checking for vim-plug..."
+if [ ! -f "$HOME/.vim/autoload/plug.vim" ]; then
+    echo "Installing vim-plug..."
+    curl -fLo "$HOME/.vim/autoload/plug.vim" --create-dirs \
+        https://githubusercontent.com
+fi
+
+if command -v vim >/dev/null 2>&1; then
+    echo "Syncing classic Vim plugins..."
+    vim +PlugInstall +qall || echo "Vim plugins encountered a minor warning, continuing..."
+fi
+
+# 2. Modern LazyVim Prerequisites (Handles Laptop & Devcontainers natively)
+echo "Ensuring Neovim/LazyVim system dependencies exist..."
+
+# Function to run commands with sudo if it's available, otherwise fallback to direct execution
+run_pkg_mgr() {
+    if command -v sudo >/dev/null 2>&1; then
+        sudo "$@"
+    else
+        "$@"
+    fi
+}
+
+if command -v pacman >/dev/null 2>&1; then
+    # CachyOS / Arch Linux Environment
+    run_pkg_mgr pacman -S --noconfirm neovim ripgrep fd unzip nodejs npm python-pipx || true
+elif command -v dnf >/dev/null 2>&1; then
+    # Fedora Workstation Environment
+    run_pkg_mgr dnf install -y neovim ripgrep fd-find unzip nodejs npm python3-pip || true
+elif command -v apt-get >/dev/null 2>&1; then
+    # Standard Debian/Ubuntu Devcontainers
+    run_pkg_mgr apt-get update && run_pkg_mgr apt-get install -y neovim ripgrep fd-find unzip nodejs npm python3-pip || true
+fi
+
+echo "Editor bootstrap sequence complete!"
+
 exit 0

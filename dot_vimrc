@@ -1,0 +1,150 @@
+" ~/.vimrc
+" Unified configuration: portable core settings + vim-plug plugin stack
+" Languages: Python, Bash/Shell, Terraform, YAML, JSON, general Linux configs
+"
+" REQUIREMENTS ON A NEW MACHINE (Fedora, CachyOS, or anywhere else):
+"   1. Vim must be compiled with +python3 for jedi-vim to work. Check with:
+"        vim --version | grep python3
+"      Look for "+python3" (not "-python3"). On Fedora this usually means
+"      installing `vim-enhanced` rather than `vim-minimal`
+"      (sudo dnf install vim-enhanced). CachyOS/Arch's default `vim`
+"      package from pacman normally already includes it.
+"   2. vim-plug must be bootstrapped once per machine:
+"        curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
+"          https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+"   3. After copying this file into place, open vim and run:
+"        :PlugInstall
+"      to fetch gruvbox, ale, and jedi-vim.
+"   4. jedi-vim completes against whatever Python environment is active
+"      when vim is launched. Activate your project's venv/pipenv shell
+"      BEFORE opening vim for real completions on installed packages.
+
+" Core behavior
+"--------------------------------------------------------------------------
+runtime! debian.vim             " No-op on non-Debian systems; harmless elsewhere
+syntax on                       " Enable syntax highlighting
+filetype plugin indent on       " Detect filetype; load ftplugins and indent rules
+set backspace=indent,eol,start  " Backspace works over auto-indent, line breaks, insert start
+set number                      " Show absolute line numbers
+set showcmd                     " Show (partial) command in status line
+set hidden                      " Hide buffers when abandoned (needed for ALE/jedi)
+set mouse=a                     " Enable mouse usage (all modes)
+
+" Source a global configuration file if available (Debian-family systems)
+if filereadable("/etc/vim/vimrc.local")
+  source /etc/vim/vimrc.local
+endif
+
+" Search
+"--------------------------------------------------------------------------
+set incsearch                  " Show matches as you type the search pattern
+set hlsearch                   " Highlight all matches of the last search
+set ignorecase                 " Case-insensitive search by default
+set smartcase                  " ...unless the pattern contains an uppercase letter
+
+" Matching / scrolling
+"--------------------------------------------------------------------------
+set showmatch                  " Briefly jump to a matching bracket when one is inserted
+set scrolloff=5                " Keep 5 lines of context above/below the cursor
+
+" Indentation defaults (2 spaces)
+" Baseline for YAML, Terraform, JSON, and any filetype without an override below
+"--------------------------------------------------------------------------
+set tabstop=2                  " Visual width a real tab character renders as
+set softtabstop=2              " Spaces inserted/removed per Tab/Backspace in insert mode
+set shiftwidth=2               " Spaces used by >>, <<, and autoindent
+set expandtab                  " Insert spaces when Tab is pressed, never literal tabs
+set autoindent                 " Copy indent of current line to the next line
+
+" Filetype-specific indentation overrides
+" Wrapped in an augroup with autocmd! so re-sourcing this file doesn't
+" stack duplicate autocommands.
+"--------------------------------------------------------------------------
+augroup filetype_indent_settings
+  autocmd!
+  " Python and Shell: 4 spaces (PEP 8 / common shell convention)
+  autocmd FileType python,sh setlocal tabstop=4 softtabstop=4 shiftwidth=4
+
+  " YAML and Terraform: explicit 2 spaces (matches the global default,
+  " set here for clarity/safety in case a filetype plugin changes it)
+  autocmd FileType yaml,terraform setlocal tabstop=2 softtabstop=2 shiftwidth=2
+augroup END
+
+" Vim's built-in python indent script (indent/python.vim, via
+" autoload/python.vim) by default indents *two* shiftwidths after an open
+" bracket with nothing following it (e.g. pressing Enter right after "{",
+" "[", or "(" ), to visually set continuation lines apart from a new
+" block. These variables force it to use a single shiftwidth instead, so
+" brackets indent by exactly 4 spaces. Values must be valid expressions
+" (hence the parentheses) since the script eval()s them.
+let g:pyindent_open_paren = 'shiftwidth()'
+let g:pyindent_nested_paren = 'shiftwidth()'
+let g:pyindent_continue = 'shiftwidth()'
+
+" Quality of life
+"--------------------------------------------------------------------------
+augroup trailing_whitespace
+  autocmd!
+  " Highlight trailing whitespace as an error (visual only, doesn't touch the file)
+  autocmd BufWinEnter * match Error /\s\+$/
+augroup END
+
+" vim-plug setup
+"--------------------------------------------------------------------------
+call plug#begin('~/.vim/plugged')
+
+" color management
+Plug 'morhetz/gruvbox'
+
+" syntax checking / linting
+Plug 'dense-analysis/ale'
+
+" autocomplete & python engine
+Plug 'davidhalter/jedi-vim'
+
+call plug#end()
+
+" Plugin configuration
+"--------------------------------------------------------------------------
+
+" jedi-vim: automatic autocomplete popup as you type
+let g:jedi#popup_on_dot = 1
+let g:jedi#popup_select_first = 0
+set completeopt=menu,menuone,noselect,preview
+
+" colorscheme: apply after plugins load
+set background=dark
+colorscheme gruvbox
+set t_Co=256
+
+" Keep terminal transparency instead of gruvbox's solid background.
+" Comment these out if you'd rather have gruvbox's normal opaque background.
+highlight Normal ctermbg=NONE guibg=NONE
+highlight NonText ctermbg=NONE guibg=NONE
+highlight LineNr ctermbg=NONE guibg=NONE
+highlight SignColumn ctermbg=NONE guibg=NONE
+highlight EndOfBuffer ctermbg=NONE guibg=NONE
+
+" ALE: linters by filetype
+let g:ale_linters = {
+\   'python': ['flake8'],
+\   'sh': ['shellcheck'],
+\   'terraform': ['tflint', 'terraform'],
+\   'yaml': ['yamllint'],
+\}
+
+let g:ale_python_flake8_options = '--max-line-length=120'
+
+" tflint: point at a project-level .tflint.hcl if you use one (optional)
+let g:ale_terraform_tflint_options = ''
+
+" yamllint: relax default strictness (flags things like missing '---' otherwise)
+let g:ale_yaml_yamllint_options = '-d relaxed'
+
+" ALE: respect your active Python virtual environment
+let g:ale_python_auto_pipenv = 1
+let g:ale_python_flake8_use_global = 0
+
+" ALE: control when syntax checking happens
+let g:ale_lint_on_text_changed = 'normal'
+let g:ale_lint_on_insert_leave = 1
