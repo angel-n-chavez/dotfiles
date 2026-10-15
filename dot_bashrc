@@ -124,3 +124,6 @@ alias kgp='kubectl get pods'
 
 # vim key bindings for CLI
 set -o vi
+
+# mise activation
+eval "$(mise activate bash)"
